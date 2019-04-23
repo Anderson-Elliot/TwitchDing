@@ -1,0 +1,16 @@
+
+<!-- <script src="//gitcdn.xyz/repo/tmijs/cdn/master/latest/1.x/tmi.min.js"></script> -->
+<div class="chat-body">
+    Chat to e018s!
+    <form [formGroup]="twitchForm" (ngSubmit)="speakMessage()">
+      <input type="text" formControlName="message">
+      <button type="submit">Chat</button>
+    </form>
+
+    <div class="chat-log">
+        <p *ngFor="let chat of chats" class="chat">
+          <span class="username" [ngStyle]="{'color': getDisplaynameColor(chat[0])}">{{ chat[0] }}:</span>
+          <span class="message">{{ chat[1] }}</span>
+        </p>
+    </div>
+</div>
