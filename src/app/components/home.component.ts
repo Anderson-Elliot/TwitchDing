@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { TwitchBot } from '../twitch/TwitchBot';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import * as rx from 'rxjs';
+import { ChannelMessage } from '../twitch/channelmessage.model';
+import { Message } from '../twitch/channelmessage.model';
+
 
 @Component({
   selector: 'app-home',
@@ -9,19 +13,44 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 })
 export class HomeComponent implements OnInit {
     twitchForm: FormGroup;
-    chats: string[][] = [];
+    channelForm: FormGroup;
+    chats: ChannelMessage[] = [];
 
     constructor(private fb: FormBuilder, private bot: TwitchBot) {
         this.twitchForm = fb.group({
             message: ''
         });
+        this.channelForm = fb.group({
+            name: ''
+        });
     }
 
     ngOnInit() {
         this.bot.connect();
-        this.bot.messaged.subscribe(message => {
-            this.chats.push(message);
+        this.bot.messaged.subscribe(event => {
+            const target = event[0];
+            const user = event[1];
+            const message = event[2];
+
+            if (!this.chats.some(cm => cm.channel === target)) {
+                const channelMessage = new ChannelMessage(target);
+                channelMessage.messages.push(new Message(user, message));
+                this.chats.push(channelMessage);
+            } else {
+                const channelMessage = this.chats.find(cm => cm.channel === target);
+                channelMessage.messages.push(new Message(user, message));
+            }
+
+            console.log(this.chats);
         });
+    }
+
+    joinChannel() {
+        if (this.channelForm.value['name']) {
+            this.chats = [];
+            this.bot.joinChannel(this.channelForm.value['name']);
+            this.channelForm.controls['name'].setValue('');
+        }
     }
 
     speakMessage() {
@@ -31,9 +60,16 @@ export class HomeComponent implements OnInit {
     }
 
     getDisplaynameColor(username: string) {
-        const color = this.intToRgb(this.hashCode(username));
-        console.log(color);
-        return `#${color}`;
+        if (username) {
+           const color = this.intToRgb(this.hashCode(username));
+           return `#${color}`;
+        }
+
+        return '';
+    }
+
+    get channelString() {
+        return this.bot.connectedChannels.map(value => value.substr(1, value.length - 1)).join(' and ');
     }
 
     hashCode(str: string) {
@@ -42,6 +78,7 @@ export class HomeComponent implements OnInit {
            // tslint:disable-next-line:no-bitwise
            hash = str.charCodeAt(i) + ((hash << 5) - hash);
         }
+
         return hash;
     }
 
