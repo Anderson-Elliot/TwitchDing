@@ -1,5 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule, APP_INITIALIZER } from '@angular/core';
+import { MatCardModule } from '@angular/material';
+import { AngularDraggableModule } from 'angular2-draggable';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -19,8 +21,10 @@ import { TwitchBot } from './twitch/TwitchBot';
   imports: [
     BrowserModule,
     AppRoutingModule,
+    MatCardModule,
     ReactiveFormsModule,
     HttpClientModule,
+    AngularDraggableModule,
   ],
   providers: [
     {

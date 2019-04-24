@@ -3,29 +3,36 @@
 <div class="chat-body">
     Chat to {{ channelString }}!
 
-    <div class="cool-form">
-      <form [formGroup]="twitchForm" (ngSubmit)="speakMessage()">
-        <input type="text" class="form-control" formControlName="message" placeholder='Message'>
-        <button type="submit" class="btn btn-primary">Chat</button>
-      </form>
-    </div>
+    <div ngResizable style="background-color: red"> I'm resizable </div>
 
     <div class="cool-form">
-      <form [formGroup]="channelForm" (ngSubmit)="joinChannel()">
+      <form [formGroup]="bot.channelForm" (ngSubmit)="joinChannel()">
         <input type="text" class="form-control" formControlName="name" placeholder="Channel">
         <button type="submit" class="btn btn-primary">Join</button>
       </form>
     </div>
 
     <div class="chat-logs">
-      <span *ngFor="let chatMessage of chats">
-        <h1>{{ chatMessage.channel }}</h1>
+      <mat-card
+        *ngFor="let chatMessage of bot.chats"
+        class="card"
+        ngDraggable
+      >
+        <h1 cdkDragHandle>{{ chatMessage.channel }} <i class="fa fa-close close-icon red" (click)="leaveChannel(chatMessage.channel)"></i></h1>
         <div class="chat-log">
             <p *ngFor="let message of chatMessage.messages" class="chat">
               <span class="username" [ngStyle]="{'color': getDisplaynameColor(message.user)}">{{ message.user }}:</span>
               <span class="message">{{ message.message }}</span>
             </p>
         </div>
-      </span>
+        <div class="chat-log-footer">
+            <div class="cool-form full chat-input">
+              <form [formGroup]="bot.messageForms[chatMessage.channel]" (ngSubmit)="speakMessage(chatMessage.channel)">
+                <input type="text" class="form-control" formControlName="message" placeholder='Message'>
+                <button type="submit" class="btn btn-primary">Chat</button>
+              </form>
+            </div>
+        </div>
+      </mat-card>
     </div>
 </div>

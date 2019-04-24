@@ -2,31 +2,36 @@ import * as tmi from 'tmi.js';
 import { EventEmitter, Injectable } from '@angular/core';
 import { TwitchConfigService } from '../services/twitchconfig.service';
 import { ChannelMessage } from './channelmessage.model';
+import { FormGroup } from '@angular/forms';
 
 @Injectable({
     providedIn: 'root'
 })
 export class TwitchBot {
+    // UI Helpers * this should maybe be split out into a service.
+    messageForms: any = {};
+    channelForm: FormGroup;
+    chats: ChannelMessage[] = [];
+
     public connectedChannels = [];
     public messaged = new EventEmitter<string[]>();
     private client: tmi.client;
-    private channel = '#e018s';
+    private username: string;
+    private channel = '';
 
     constructor(private twitchConfig: TwitchConfigService) { }
 
     connect() {
+        this.username = this.twitchConfig.getConfigValue('username');
         const opts = {
             identity: {
-                username: this.twitchConfig.getConfigValue('username'),
+                username: this.username,
                 password: this.twitchConfig.getConfigValue('password'),
             },
-            channels: [
-                'e018s',
-            ]
+            channels: []
         };
         this.client = new tmi.client(opts);
         this.client.connect();
-        this.connectedChannels = this.client.channels;
 
         this.client.on('message', (target, context, msg, self) => {
             this.handleMsg(target, context, msg, self);
@@ -34,25 +39,21 @@ export class TwitchBot {
 
         this.client.on('connected', (addr, port) => {
             console.log(`Conneceted to ${addr} on ${port}`);
-            this.connectedChannels = this.client.channels;
         });
+
+        console.log(Object.getOwnPropertyNames(this.client.__proto__));
+    }
+
+    get connected() {
+        if (this.client) {
+          return this.client.readyState() === 'OPEN';
+        }
+        return false;
     }
 
     handleMsg(target, context, msg: string, self) {
         this.messaged.emit([target, context['display-name'], msg]);
-        if (!self) {
-            this.playNotifcationSound();
-            // let spongebobMessage = '';
-            // for (let i = 0; i < msg.length; i++) {
-            //     const random = Math.random() >= 0.5;
-            //     if (random) {
-            //         spongebobMessage += msg.charAt(i).toUpperCase();
-            //     } else {
-            //         spongebobMessage += msg.charAt(i).toLowerCase();
-            //     }
-            // }
-            // this.client.say(target, spongebobMessage);
-        }
+        this.playNotifcationSound();
     }
 
     playNotifcationSound() {
@@ -62,17 +63,35 @@ export class TwitchBot {
         audio.play();
     }
 
-    sayMessage(message) {
+    sayMessage(channel, message) {
         if (this.client) {
-            this.client.say(this.channel, message);
+            this.client.say(channel, message);
         }
     }
 
     joinChannel(channel: string) {
         if (this.client) {
+            this.connectedChannels.push(channel);
             this.channel = `#${channel}`;
-            this.client.channels.push(this.channel);
-            this.client.connect();
+            this.client.join(`#${channel}`);
         }
+    }
+
+    leaveChannel(channel: string) {
+        console.log(`Leave channel ${channel}`);
+        if (this.client) {
+            const index = this.connectedChannels.indexOf(channel);
+            if (index > -1) {
+                this.connectedChannels.splice(index, 1);
+                this.removeChat(channel);
+                this.client.leave(`#${channel}`);
+            }
+        }
+    }
+
+    removeChat(channel: string) {
+        console.log(this.chats);
+        const index = this.chats.findIndex(c => c.channel === channel);
+        this.chats.splice(index, 1);
     }
 }

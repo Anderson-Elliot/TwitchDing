@@ -1,11 +1,12 @@
 @import '~bootstrap/dist/css/bootstrap.min.css'
+@import './style-variables.sass'
 
 body
   background-color: black
   color: white
 
 .site-header-1
-  color: blue
+  color: $bootstrap-blue
 
 .chat-body
   display: block
@@ -16,17 +17,26 @@ body
   display: inline-flex
   justify-content: center
 
-.chat-logs span
-  width: 550px
+.chat-logs .card
+  min-width: 100px
+  min-height: 200px
   margin: 1em
+  background-color: $card-background
+  border: 1px solid $bootstrap-blue
+
+.chat-logs .card h1
+  margin: -10px 0 0
 
 .chat-log
   display: block
-  margin: 1em auto
-  width: 100%
-  border: 2px dotted white
+  margin: 0.5em auto
+  min-width: 5%
+  border: 2px solid white
+  border-radius: 3px
   font-family: 'Tahoma, Geneva, sans-serif'
-  min-height: 1em
+  height: calc(100% - 85px)
+  overflow-y: auto
+  background-color: black
 
 .chat-log .chat
   margin: 5px 10px
@@ -45,6 +55,19 @@ body
   width: 25%
   margin: 0 auto
 
+.cool-form.full
+  width: 100%
+
+.cool-form.chat-input
+  margin: 0
+  padding: 5px
+  position: absolute
+  bottom: 0
+  left: 0
+
+.cool-form.chat-input form
+  margin: 0
+
 .cool-form form
   display: flex
   margin-bottom: 5px
@@ -57,3 +80,36 @@ body
 .cool-form form input
   border-top-right-radius: 0
   border-bottom-right-radius: 0
+
+.mwlResizable
+  box-sizing: border-box
+
+mwlResizable
+  box-sizing: border-box
+
+.red
+  color: $red !important
+
+.resize-protector
+  width: 10px
+  height: 10px
+  margin: 0
+  padding: 0
+  position: absolute
+  right: 0
+  bottom: 0
+  background-color: red
+  z-index: 9999
+
+.close-icon
+  font-size: 22px
+  display: inline-flex
+
+.close-icon:hover
+  darken($red, 0.5)
+  transform: scale(1.1)
+  transform-origin: center
+
+.resizable
+  overflow: auto
+  resize: both
