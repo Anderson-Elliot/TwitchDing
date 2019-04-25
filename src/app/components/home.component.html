@@ -1,14 +1,22 @@
 
 <!-- <script src="//gitcdn.xyz/repo/tmijs/cdn/master/latest/1.x/tmi.min.js"></script> -->
 <div class="chat-body">
-    Chat to {{ channelString }}!
+    <div *ngIf="channelString">
+      <span class="font-weight-bold blue">Chat to:</span> {{ channelString }}!
+    </div>
 
-    <div ngResizable style="background-color: red"> I'm resizable </div>
+    <div
+      class="connection-state"
+      (click)="bot.disconnect()"
+      [ngClass]="{'connected': bot.readyState === 1, 'disconnected': bot.readyState === 3, 'transitioning': bot.readyState === 0 || bot.readyState === 2}"
+    >
+      <span class="state">{{ connectionState[bot.readyState] }}</span>
+    </div>
 
     <div class="cool-form">
       <form [formGroup]="bot.channelForm" (ngSubmit)="joinChannel()">
-        <input type="text" class="form-control" formControlName="name" placeholder="Channel">
-        <button type="submit" class="btn btn-primary">Join</button>
+        <input type="text" class="form-control" formControlName="name" placeholder="Channel" [appDisableControl]="!bot.connected">
+        <button type="submit" class="btn btn-primary" [disabled]="!bot.connected">Join</button>
       </form>
     </div>
 
@@ -17,19 +25,23 @@
         *ngFor="let chatMessage of bot.chats"
         class="card"
         ngDraggable
+        ngResizable
+        [ngClass]="{'z-front': chatMessage.front, 'z-back': !chatMessage.front}"
+        (mousedown)="sendToFront(chatMessage)"
       >
-        <h1 cdkDragHandle>{{ chatMessage.channel }} <i class="fa fa-close close-icon red" (click)="leaveChannel(chatMessage.channel)"></i></h1>
-        <div class="chat-log">
-            <p *ngFor="let message of chatMessage.messages" class="chat">
-              <span class="username" [ngStyle]="{'color': getDisplaynameColor(message.user)}">{{ message.user }}:</span>
+        <h1>{{ chatMessage.channel }}</h1>
+        <i class="fa fa-close close-icon red" (click)="leaveChannel(chatMessage.channel)" [ngClass]="{'z-front': chatMessage.front, 'z-back': !chatMessage.front}"></i>
+        <div class="chat-log scrollbar-style-1" id={{chatMessage.channel}}>
+            <p *ngFor="let message of chatMessage.messages" class="chat" [ngClass]="{'notice-message': message.isNotice}">
+              <span class="username" [ngStyle]="{'color': message.color}" *ngIf="!message.isNotice">{{ message.user }}:</span>
               <span class="message">{{ message.message }}</span>
             </p>
         </div>
         <div class="chat-log-footer">
             <div class="cool-form full chat-input">
               <form [formGroup]="bot.messageForms[chatMessage.channel]" (ngSubmit)="speakMessage(chatMessage.channel)">
-                <input type="text" class="form-control" formControlName="message" placeholder='Message'>
-                <button type="submit" class="btn btn-primary">Chat</button>
+                <input type="text" class="form-control" formControlName="message" placeholder='Message' [appDisableControl]="!bot.connected">
+                <button type="submit" class="btn btn-primary" [disabled]="!bot.connected">Chat</button>
               </form>
             </div>
         </div>
