@@ -1,62 +1,124 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { TwitchBot } from '../twitch/TwitchBot';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder } from '@angular/forms';
 import * as rx from 'rxjs';
 import { ChannelMessage } from '../twitch/channelmessage.model';
 import { Message } from '../twitch/channelmessage.model';
-
+import { ToastrService } from 'ngx-toastr';
+import { CONNECTIONSTATE } from '../helpers/connection-state';
+import * as $ from 'jquery';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['../app.component.sass']
+  styleUrls: ['../app.component.sass', '../resizable.scss']
 })
-export class HomeComponent implements OnInit {
-    twitchForm: FormGroup;
-    channelForm: FormGroup;
-    chats: ChannelMessage[] = [];
+export class HomeComponent implements OnInit, OnDestroy {
+    messagedSubscription: rx.Subscription;
+    joinedSubscription: rx.Subscription;
+    errorSubscription: rx.Subscription;
 
-    constructor(private fb: FormBuilder, private bot: TwitchBot) {
-        this.twitchForm = fb.group({
-            message: ''
-        });
-        this.channelForm = fb.group({
+    constructor(
+        private fb: FormBuilder,
+        private bot: TwitchBot,
+        private toastr: ToastrService) {
+        this.bot.channelForm = fb.group({
             name: ''
         });
     }
 
     ngOnInit() {
-        this.bot.connect();
-        this.bot.messaged.subscribe(event => {
-            const target = event[0];
-            const user = event[1];
-            const message = event[2];
+        if (!this.bot.connected) {
+            this.bot.connect();
+        }
+        this.messagedSubscription = this.bot.messaged.subscribe(this.handleMessage);
+        this.joinedSubscription = this.bot.channelJoined.subscribe(this.handleJoined);
+        this.errorSubscription = this.bot.error.subscribe(this.handleError);
+    }
 
-            if (!this.chats.some(cm => cm.channel === target)) {
-                const channelMessage = new ChannelMessage(target);
-                channelMessage.messages.push(new Message(user, message));
-                this.chats.push(channelMessage);
-            } else {
-                const channelMessage = this.chats.find(cm => cm.channel === target);
-                channelMessage.messages.push(new Message(user, message));
-            }
-
-            console.log(this.chats);
-        });
+    ngOnDestroy() {
+        this.messagedSubscription.unsubscribe();
+        this.joinedSubscription.unsubscribe();
+        this.errorSubscription.unsubscribe();
     }
 
     joinChannel() {
-        if (this.channelForm.value['name']) {
-            this.chats = [];
-            this.bot.joinChannel(this.channelForm.value['name']);
-            this.channelForm.controls['name'].setValue('');
+        const channel = this.bot.channelForm.value['name'];
+        if (channel && !this.channelAlreadyJoined(channel)) {
+            this.bot.joinChannel(channel);
+        }
+
+        this.bot.channelForm.controls['name'].setValue('');
+    }
+
+    handleJoined = (channel: string) => {
+        const messageForm = this.fb.group({
+            channel: channel,
+            message: ''
+        });
+        this.bot.messageForms[channel] = messageForm;
+
+        // new up the chat message object
+        if (!this.bot.chats.some(cm => cm.channel === channel)) {
+            const channelMessage = new ChannelMessage(channel);
+            this.bot.chats.push(channelMessage);
         }
     }
 
-    speakMessage() {
-        const message = this.twitchForm.value['message'];
-        this.bot.sayMessage(message);
-        this.twitchForm.controls['message'].setValue('');
+    channelAlreadyJoined(channel: string) {
+        const joined = this.bot.connectedChannels.includes(channel);
+        if (joined) {
+            this.toastr.warning('Channel is already joined');
+        }
+
+        return joined;
+    }
+
+    leaveChannel(channel: string) {
+        this.bot.leaveChannel(channel);
+    }
+
+    handleMessage = (event: any[]) => {
+        const target = event[0].substr(1, event[0].length - 1);
+        const message = event[1];
+
+        if (!this.bot.chats.some(cm => cm.channel === target)) {
+            const channelMessage = new ChannelMessage(target);
+            channelMessage.messages.push(message);
+            this.bot.chats.push(channelMessage);
+        } else {
+            const channelMessage = this.bot.chats.find(cm => cm.channel === target);
+            channelMessage.messages.push(message);
+
+            if (channelMessage.messages.length > 50) {
+                channelMessage.messages = channelMessage.messages.slice(10, channelMessage.messages.length);
+            }
+        }
+
+        this.scrollToBottom(target);
+    }
+
+    scrollToBottom(channel: string) {
+        const element = $(`#${channel}`);
+        if (element) {
+            const isScrolledBottom = element.scrollTop() + element.outerHeight() > element.prop('scrollHeight');
+            if (isScrolledBottom) {
+                element.animate({ scrollTop: element.prop('scrollHeight')}, 1000);
+            }
+        }
+    }
+
+    speakMessage(channel: string) {
+        const messageForm = this.bot.messageForms[channel];
+        if (messageForm) {
+            const message = messageForm.value['message'];
+            this.bot.sayMessage(channel, message);
+            messageForm.controls['message'].setValue('');
+        }
+    }
+
+    handleError = (error: string) => {
+        this.toastr.error(error);
     }
 
     getDisplaynameColor(username: string) {
@@ -69,7 +131,11 @@ export class HomeComponent implements OnInit {
     }
 
     get channelString() {
-        return this.bot.connectedChannels.map(value => value.substr(1, value.length - 1)).join(' and ');
+        return this.bot.connectedChannels.join(' and ');
+    }
+
+    get connectionState() {
+        return CONNECTIONSTATE;
     }
 
     hashCode(str: string) {
@@ -89,5 +155,14 @@ export class HomeComponent implements OnInit {
         .toUpperCase();
 
         return '00000'.substring(0, 6 - c.length) + c;
+    }
+
+    sendWindowsToBack() {
+        this.bot.chats.forEach(chat => chat.front = false);
+    }
+
+    sendToFront(chat: ChannelMessage) {
+        this.sendWindowsToBack();
+        chat.front = true;
     }
 }

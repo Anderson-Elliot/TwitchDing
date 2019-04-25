@@ -28,6 +28,7 @@
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "./node_modules/font-awesome/css/font-awesome.css",
               "src/styles.sass"
             ],
             "scripts": []
@@ -87,7 +88,7 @@
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "src/styles.sass"
             ],
-            "scripts": [],
+            "scripts": ["../node_modules/jquery/dist/jquery.min.js"],
             "assets": [
               "src/favicon.ico",
               "src/assets"
