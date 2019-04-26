@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TwitchBot } from './twitch/TwitchBot';
 
 @Component({
   selector: 'app-root',
@@ -6,5 +7,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.sass']
 })
 export class AppComponent {
-  title = 'website';
+  constructor(private bot: TwitchBot) {}
 }

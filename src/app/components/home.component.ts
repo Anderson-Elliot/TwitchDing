@@ -7,6 +7,7 @@ import { Message } from '../twitch/channelmessage.model';
 import { ToastrService } from 'ngx-toastr';
 import { CONNECTIONSTATE } from '../helpers/connection-state';
 import * as $ from 'jquery';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -21,19 +22,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     constructor(
         private fb: FormBuilder,
         private bot: TwitchBot,
-        private toastr: ToastrService) {
+        private toastr: ToastrService,
+        private router: Router) {
         this.bot.channelForm = fb.group({
             name: ''
         });
     }
 
     ngOnInit() {
-        if (!this.bot.connected) {
-            this.bot.connect();
-        }
         this.messagedSubscription = this.bot.messaged.subscribe(this.handleMessage);
         this.joinedSubscription = this.bot.channelJoined.subscribe(this.handleJoined);
         this.errorSubscription = this.bot.error.subscribe(this.handleError);
+
+        if (!this.bot.loggedIn) {
+            this.toastr.error('Please log in first');
+            this.router.navigateByUrl('/login');
+        } else {
+            if (!this.bot.connected) {
+                this.bot.connect();
+            }
+        }
     }
 
     ngOnDestroy() {

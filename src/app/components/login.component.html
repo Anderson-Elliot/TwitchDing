@@ -1,0 +1,17 @@
+<div class="chat-body">
+    <!-- <div
+        class="connection-state"
+        (click)="bot.disconnect()"
+        [ngClass]="{'connected': bot.readyState === 1, 'disconnected': bot.readyState === 3, 'transitioning': bot.readyState === 0 || bot.readyState === 2}"
+    >
+        <span class="state">{{ connectionState[bot.readyState] }}</span>
+    </div> -->
+
+    <div class="cool-form">
+        <form [formGroup]="loginForm" (ngSubmit)="login()">
+            <input type="text" class="form-control" formControlName="username" placeholder="Username" [appDisableControl]="bot.connected">
+            <input type="text" class="form-control" formControlName="token" placeholder="Oauth Token" [appDisableControl]="bot.connected">
+            <button type="submit" class="btn btn-primary" [disabled]="bot.connected">Log In</button>
+        </form>
+    </div>
+</div>

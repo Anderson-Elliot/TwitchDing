@@ -16,10 +16,12 @@ export class TwitchBot {
     chats: ChannelMessage[] = [];
     timer = interval(10000);
     canPlaySound = true;
+    loggedIn = false;
 
     public connectedChannels = [];
 
     // Events
+    public clientConnected = new EventEmitter<string>();
     public messaged = new EventEmitter<any[]>();
     public channelJoined = new EventEmitter<string[]>();
     public error = new EventEmitter<string[]>();
@@ -33,16 +35,19 @@ export class TwitchBot {
         });
     }
 
-    connect() {
-        this.username = this.twitchConfig.getConfigValue('username');
+    generateClient(username: string, token: string) {
+        this.username = username;
         const opts = {
             identity: {
                 username: this.username,
-                password: this.twitchConfig.getConfigValue('password'),
+                password: token,
             },
             channels: []
         };
         this.client = new tmi.client(opts);
+    }
+
+    connect() {
         this.client.connect();
 
         this.client.on('message', (target, context, msg, self) => {
@@ -50,6 +55,7 @@ export class TwitchBot {
         });
 
         this.client.on('connected', (addr, port) => {
+            this.clientConnected.emit(this.username);
             console.log(`Conneceted to ${addr} on ${port}`);
         });
 

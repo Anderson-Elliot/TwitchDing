@@ -14,12 +14,14 @@ import { HttpClientModule } from '@angular/common/http';
 import { TwitchConfigService } from './services/twitchconfig.service';
 import { TwitchBot } from './twitch/TwitchBot';
 import { DisableControlDirective } from './helpers/disable-control';
+import { LoginComponent } from './components/login.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
     AboutComponent,
+    LoginComponent,
     DisableControlDirective,
   ],
   imports: [
